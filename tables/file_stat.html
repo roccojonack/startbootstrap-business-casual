@@ -1,0 +1,195 @@
+<html>
+<head>
+  <script src="http://d3js.org/d3.v3.min.js"></script>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <script src="http://code.jquery.com/jquery-2.2.0.min.js"></script>
+  <script src="https://cdn.datatables.net/1.10.10/js/jquery.dataTables.min.js"></script>
+  <script src="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+  <link href="https://cdn.datatables.net/1.10.10/css/jquery.dataTables.min.css" type="text/css" rel="stylesheet" />
+  <link href="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css"  type="text/css" rel="stylesheet" />
+</head>
+<body>
+     <p><h1 align=center>File size statistics</h1></p>
+	<hr size="1">
+     <div data-role="header">
+      <div data-role="navbar">
+		<ul>
+			<li><a href="index.html">Main Page</a></li>
+			<li><a href="/units/tb_mod/source/sc/tb/html/index.html">Doxygen</a></li>
+			<li><a href="/units/tb_mod/doc/html/results.html">Simulation results</a></li>
+			<li><a href="/units/tb_mod/bin/evaluate_build.html">Build&Run errors/warnings</a></li>
+			<li><a href="file_stat.html">Source statistics</a></li>
+		</ul>
+      </div>
+     </div>
+	<hr size="1">
+     <p>
+     <div data-role="controlgroup" data-type="horizontal">
+          <select id="label-option">
+          <option value="">default</option>
+          <option value="statistics">source file sizes</option>
+          <option value="/units/tb_mod/statistics_script">script file sizes</option>
+          <option value="/units/tb_mod/statistics_make">make file sizes</option>
+          <option value="/units/tb_mod/statistics_web">web file sizes</option>
+          </select>
+          <select id="chart-option">
+          <option value="bar">bar chart</option>
+          <option value="scatter">line chart</option>
+          </select>
+         <a href="#anylink" class="ui-btn" id="button">Remove Selected</a>
+     </div>
+     </p>
+<div id="chartCanvas" style="width:1000px; height:600px;"></div>
+<div id="spaveCanvas" style="width:1000px; height:80px;"></div>
+<div id="tableCanvas" style="width:1000px; height:600px;"></div>
+<script>
+
+/* JAVASCRIPT CODE GOES HERE */
+
+// the main function is reading a CSV file, putting the data into a JS data structure
+// and finally formats the data for plotly; setting up all layout information
+// finally calling plotly itself
+function readCSV(data_array, data, Title, xTitle, yTitle, charttype) {
+      // var my_data = d3.csv.parse(data);
+      var my_data = data_array;
+      console.log(my_data);  // keys
+      // console.log(data_array);  // keys
+ 	    // first line contains the keys for different sets of values
+      var key_data_string = data.substring(0,data.indexOf("\n"));
+      var key_data = key_data_string.split(",");
+      console.log(key_data);  // keys
+	    // first row contains X axis values for all sets
+      var xAxis = [];
+      var index1;
+      var index;
+      for (index = 0; index < my_data.length; index++) {
+         xAxis.push(my_data[index][key_data[0]]);
+         // xAxis.push(my_data[index][0]);
+      };
+      console.log(xAxis);
+	    // all rows (except for first which is X) define Y values
+      var yAxis = [];
+      var yAxis_tmp = [];
+      for (index1 = 1; index1 < key_data.length; index1++) {
+        yAxis_tmp = [];
+        for (index = 0; index < my_data.length; index++) {
+           yAxis_tmp.push(my_data[index][key_data[index1]]);
+           // yAxis_tmp.push(my_data[index][index1]);
+        };
+        yAxis.push(yAxis_tmp);
+      };
+      console.log(yAxis);
+	  // push data into data structure for plotly
+      var trace = [];
+      for (index1 = 1; index1 < key_data.length; index1++) {
+        var trace_tmp = {
+          x: xAxis,
+          y: yAxis[index1-1],
+          name: key_data[index1],
+          mode: 'lines+markers',
+          line: {shape: 'spline'},
+          type: charttype
+        };
+        trace.push(trace_tmp);
+      };
+	  // setup layout information
+      var layout = {
+        title: Title,
+        xaxis: {
+          title: xTitle,
+          tickfont: {
+            size: 14,
+            color: 'rgb(107, 107, 107)'
+          },
+        },
+        yaxis: {
+          title: yTitle,
+          titlefont: {
+            size: 16,
+            color: 'rgb(107, 107, 107)'
+          },
+          tickfont: {
+            size: 14,
+            color: 'rgb(107, 107, 107)'
+          }
+        },
+        barmode: 'stack'
+      };
+      console.log(trace);
+      // actually call plotly
+      Plotly.newPlot('chartCanvas', trace, layout);
+};
+
+//add an event listener
+d3.select("select")
+      .on("change", function(d) {
+        var sel       = d3.select('#label-option').node().value + ".csv";
+        var TableFile = d3.select('#label-option').node().value + ".html";
+        var charttype = d3.select('#chart-option').node().value;
+        console.log(sel);
+        console.log(TableFile);
+        console.log(charttype);
+        var Title;
+        var xTitle;
+        var yTitle;
+     	// read actual CSV file; make sure no spaces!
+      	d3.text(sel, 'text/csv', function(data) {
+	  	  // setup the title based on comment if input file
+      	  if (data.indexOf("# Title:") != -1) {
+            Title = data.substring(data.indexOf("# Title:") + 8, data.indexOf("\n"));
+          }
+          else {
+            Title = "Undefined";
+          };
+          console.log("Title is " + Title);
+	      // setup the X axis title based on comment if input file
+          if (data.indexOf("# xTitle:") != -1) {
+            xTitle = data.substring(data.indexOf("# xTitle:") + 9,
+                                data.indexOf("\n", data.indexOf("# xTitle:")));
+          }
+          else {
+            xTitle = "";
+          };
+          console.log("xTitle is " + xTitle);
+	        // setup the Y axis title based on comment if input file
+          if (data.indexOf("# yTitle:") != -1) {
+            yTitle = data.substring(data.indexOf("# yTitle:") + 9,
+                                data.indexOf("\n", data.indexOf("# yTitle:")));
+          }
+          else {
+            yTitle = "Undefined";
+          };
+          console.log("yTitle is " + yTitle);
+	        // remove all comments before passing into data structure
+          data = data.replace(/^[#@][^\r\n]+[\r\n]+/mg, '');
+          console.log(data);  //raw data
+
+          var my_arr = d3.csv.parse(data);
+          $(function() {
+            $("#tableCanvas").load(TableFile, function () {
+              var table = $('#example').DataTable();
+
+              readCSV(my_arr, data, Title, xTitle, yTitle, charttype);
+
+              $('#example tbody').on( 'click', 'tr', function () {
+                if ( $(this).hasClass('selected') ) {
+                  $(this).removeClass('selected');
+                }
+                else {
+                  table.$('tr.selected').removeClass('selected');
+                  $(this).addClass('selected');
+                }
+              } );
+
+              $('#button').click( function () {
+                table.row('.selected').remove().draw( false );
+                console.log(table);
+              } );
+            } );
+          } );
+        } );
+      } );
+
+</script>
+</body>
+</html>

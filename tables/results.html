@@ -1,0 +1,197 @@
+<html>
+<head>
+   <script src="http://d3js.org/d3.v3.min.js"></script>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <script src="http://code.jquery.com/jquery-2.2.0.min.js"></script>
+  <script src="https://cdn.datatables.net/1.10.10/js/jquery.dataTables.min.js"></script>
+  <script src="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+  <link href="https://cdn.datatables.net/1.10.10/css/jquery.dataTables.min.css" type="text/css" rel="stylesheet" />
+  <link href="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css"  type="text/css" rel="stylesheet" />
+ </head>
+<body>
+     <p><h1 align=center>Chart with different Simulation results</h1></p>
+	<hr size="1">
+     <div data-role="header">
+      <div data-role="navbar">
+		<ul>
+			<li><a href="/units/tb_mod/doc/html/index.html">Unit Main Page</a></li>
+			<li><a href="/units/tb_mod/source/sc/tb/html/index.html">Doxygen</a></li>
+			<li><a href="/units/tb_mod/doc/html/results.html">Simulation results</a></li>
+			<li><a href="/units/tb_mod/bin/evaluate_build.html">Build&Run errors/warnings</a></li>
+			<li><a href="/units/tb_mod/doc/html/file_stat.html">Source statistics</a></li>
+		</ul>
+      </div>
+     </div>
+	<hr size="1">
+     <p>
+        <div data-role="controlgroup" data-type="horizontal">
+        <select id="label-option">
+          <option value="">Result Type</option>
+          <option value="../../bin/logs/run_test.11000001.1.0.sum">lt/lt blocking</option>
+          <option value="../../bin/logs/run_test.11000001.1.1.sum">lt/lt debug</option>
+          <option value="../../bin/logs/run_test.11000002.1.0.sum">lt/mem blocking</option>
+          <option value="../../bin/logs/run_test.11000002.1.1.sum">lt/mem debug</option>
+          <option value="../../bin/logs/run_test.11000007.1.0.sum">lt/reg blocking</option>
+          <option value="../../bin/logs/run_test.11000007.1.1.sum">lt/reg debug</option>
+          <option value="../../bin/logs/run_test.31000005.1.0.sum">signal/signal blocking</option>
+          <option value="../../bin/logs/run_test.31000005.1.1.sum">signal/signal debug</option>
+          <option value="../../bin/logs/run_test.41000006.1.0.sum">ia/ia blocking</option>
+          <option value="../../bin/logs/run_test.41000006.1.1.sum">ia/ia debug</option>
+          <option value="../../bin/logs/run_test.11001001.1.0.sum">lt/interconnect/lt blocking</option>
+          <option value="../../bin/logs/run_test.11001001.1.1.sum">lt/interconnect/lt debug</option>
+         </select>
+        <select id="scale-option">
+          <option value="linear">linear</option>
+          <option value="log">logarithmic</option>
+        </select>
+        <select id="chart-option">
+          <option value="line">line chart</option>
+          <option value="bar">bar chart</option>
+        </select>
+       </div>
+     </p>
+<div id="chartCanvas" style="width:800px; height:500px;"></div>
+<div id="spaveCanvas" style="width:1000px; height:80px;"></div>
+<div id="tableCanvas" style="width:1000px; height:600px;"></div>
+<script>
+
+/* JAVASCRIPT CODE GOES HERE */
+var charttype;
+var scaletype;
+
+function readCSV(myfile) {
+      // read actual CSV file; make sure no spaces!
+      d3.text(myfile, 'text/csv', function(data) {
+      console.log(myfile);  //log raw data
+
+      var Title;
+      if (data.indexOf("# Title:") != -1) {
+        Title = data.substring(data.indexOf("# Title:") + 8, data.indexOf("\n"));
+      }
+      else {
+        Title = "Undefined";
+      };
+      console.log("Title is " + Title);
+
+      var xTitle;
+      if (data.indexOf("# xTitle:") != -1) {
+        xTitle = data.substring(data.indexOf("# xTitle:") + 9,
+                                data.indexOf("\n", data.indexOf("# xTitle:")));
+      }
+      else {
+        xTitle = "Undefined";
+      };
+      console.log("xTitle is " + xTitle);
+
+      var yTitle;
+      if (data.indexOf("# yTitle:") != -1) {
+        yTitle = data.substring(data.indexOf("# yTitle:") + 9,
+                                data.indexOf("\n", data.indexOf("# yTitle:")));
+      }
+      else {
+        yTitle = "Undefined";
+      };
+      console.log("yTitle is " + yTitle);
+
+      data = data.replace(/^[#@][^\r\n]+[\r\n]+/mg, '');
+      var my_data = d3.csv.parse(data);
+      console.log(data);  //raw data
+
+      var key_data_string = data.substring(0,data.indexOf("\n"));
+      var key_data = key_data_string.split(",");
+      //key_data.push("RTF=1");;
+      console.log(key_data);  //keys
+
+      var xAxis = [];
+      var index1;
+      var index;
+      for (index = 0; index < my_data.length; index++) {
+        xAxis.push(my_data[index][key_data[0]]);
+      };
+      console.log(xAxis);
+
+      var yAxis = [];
+      var yAxis_tmp = [];
+      for (index1 = 1; index1 < key_data.length; index1++) {
+        yAxis_tmp = [];
+       	for (index = 0; index < my_data.length; index++) {
+          		yAxis_tmp.push(my_data[index][key_data[index1]]);
+        };
+        yAxis.push(yAxis_tmp);
+      };
+
+      console.log(yAxis);
+
+      var trace = [];
+      for (index1 = 1; index1 < key_data.length; index1++) {
+        if (charttype=="line") {
+        var trace_tmp = {
+          x: xAxis,
+          y: yAxis[index1-1],
+          name: key_data[index1],
+          mode: 'lines+markers',
+          line: {shape: 'spline'},
+          type: 'scatter'
+        };
+        }
+        else {
+        var trace_tmp = {
+          x: xAxis,
+          y: yAxis[index1-1],
+          name: key_data[index1],
+          type: 'bar'
+        };
+        };
+        trace.push(trace_tmp);
+      };
+
+      var layout = {
+        title: Title,
+        xaxis: {
+          title: xTitle,
+          tickfont: {
+            size: 14,
+            color: 'rgb(107, 107, 107)'
+          },
+          type: scaletype
+        },
+        yaxis: {
+          title: yTitle,
+          titlefont: {
+            size: 16,
+            color: 'rgb(107, 107, 107)'
+          },
+          tickfont: {
+            size: 14,
+            color: 'rgb(107, 107, 107)'
+          }
+        },
+        barmode: 'stack'
+      };
+      console.log(trace);
+      Plotly.newPlot('chartCanvas', trace, layout);
+      });
+};
+
+//add an event listener
+d3.select("select")
+    .on("change", function(d){
+      var sel       = d3.select('#label-option').node().value + ".csv";
+      var TableFile = d3.select('#label-option').node().value + ".html";
+      scaletype     = d3.select('#scale-option').node().value;
+      charttype     = d3.select('#chart-option').node().value;
+      console.log(sel);
+      console.log(TableFile);
+      console.log(scaletype);
+      console.log(charttype);
+      readCSV(sel);
+      $(function () {
+        $("#tableCanvas").load(TableFile, function () {
+              $('#example').DataTable();
+        } );
+      } );
+    } );
+
+</script>
+</body>
+</html>

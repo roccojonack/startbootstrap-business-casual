@@ -1,0 +1,83 @@
+<html>
+<head>
+  <script src="http://code.jquery.com/jquery-2.2.0.min.js"></script>
+  <script src="https://cdn.datatables.net/1.10.10/js/jquery.dataTables.min.js"></script>
+  <script src="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+  <link href="https://cdn.datatables.net/1.10.10/css/jquery.dataTables.min.css" type="text/css" rel="stylesheet" />
+  <link href="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css"  type="text/css" rel="stylesheet" />
+</head>
+<body>
+     <p><h1 align=center>Tables example</h1></p>
+	<hr size="1">
+     <div data-role="header">
+      <div data-role="navbar">
+		<ul>
+			<li><a href="index.html">Main Page</a></li>
+			<li><a href="tables.html">Table</a></li>
+		</ul>
+      </div>
+     </div>
+	<hr size="1">
+     </p>
+     <button id="addRow">add</button>
+<table id="tableCanvas" class="hover" class="cell-border" style="display"></table>
+<script>
+
+/* JAVASCRIPT CODE GOES HERE */
+
+// the main function is reading a CSV file, putting the data into a JS data structure
+// and finally formats the data for plotly; setting up all layout information
+// finally calling plotly itself
+
+  var lines = [];
+
+  $(document).ready(function() {
+    $.ajax({
+        type: "GET",
+        url: "statistics.csv",
+        dataType: "text",
+        success: function(data) {processData(data);}
+    });
+  });
+
+  function addRow(lines) {
+    var t = $('#tableCanvas').DataTable( {
+        data: lines,
+        columns: [
+            { title: "Name" },
+            { title: "lines" },
+            { title: "comments" }
+        ]
+      } );
+
+      $('#addRow').on( 'click', function () {
+        t.row.add( [
+          'rocco',
+          '111',
+          '42'
+        ] ).draw( false );  
+      } );
+    }
+
+  function processData(allText) {
+    var allTextLines = allText.split(/\r\n|\n/);
+    var headers = allTextLines[0].split(',');
+
+    for (var i=1; i<allTextLines.length; i++) {
+        var data = allTextLines[i].split(',');
+        if (data.length == headers.length) {
+
+            var tarr = [];
+            for (var j=0; j<headers.length; j++) {
+                tarr.push(data[j]);
+            }
+            lines.push(tarr);
+        }
+    }
+    console.log(lines);
+    addRow(lines);
+  }
+  
+</script>
+</body>
+</html>
