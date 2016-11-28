@@ -20,6 +20,7 @@
 	<hr size="1">
      </p>
      <button id="addRow">add</button>
+     <button id="deleteRow">delete</button>
 <table id="tableCanvas" class="hover" class="cell-border" style="display"></table>
 <script>
 
@@ -40,13 +41,15 @@
     });
   });
 
-  function addRow(lines) {
+  function addRow(lines,keys) {
     var t = $('#tableCanvas').DataTable( {
         data: lines,
         columns: [
-            { title: "Name" },
-            { title: "lines" },
-            { title: "comments" }
+            { title: keys[0] },
+            { title: keys[1] },
+            { title: keys[2] },
+            { title: keys[3] },
+            { title: keys[4] }
         ]
       } );
 
@@ -54,8 +57,24 @@
         t.row.add( [
           'rocco',
           '111',
+          '111',
+          '111',
           '42'
         ] ).draw( false );  
+      } );
+
+      $('#tableCanvas').on( 'click', 'tr', function () {
+        if ( $(this).hasClass('selected') ) {
+            $(this).removeClass('selected');
+        }
+        else {
+            t.$('tr.selected').removeClass('selected');
+            $(this).addClass('selected');
+        }
+      } );
+ 
+      $('#deleteRow').click( function () {
+        t.row('.selected').remove().draw( false );
       } );
     }
 
@@ -75,7 +94,7 @@
         }
     }
     console.log(lines);
-    addRow(lines);
+    addRow(lines, headers);
   }
   
 </script>
