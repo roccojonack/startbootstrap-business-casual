@@ -22,37 +22,27 @@
         <select id="label-option">
           <option value="">Result Type</option>
           <option value="statistics">stat</option>
-          <option value="../../bin/logs/run_test.11000001.1.1.sum">lt/lt debug</option>
-          <option value="../../bin/logs/run_test.11000002.1.0.sum">lt/mem blocking</option>
-          <option value="../../bin/logs/run_test.11000002.1.1.sum">lt/mem debug</option>
-          <option value="../../bin/logs/run_test.11000007.1.0.sum">lt/reg blocking</option>
-          <option value="../../bin/logs/run_test.11000007.1.1.sum">lt/reg debug</option>
-          <option value="../../bin/logs/run_test.31000005.1.0.sum">signal/signal blocking</option>
-          <option value="../../bin/logs/run_test.31000005.1.1.sum">signal/signal debug</option>
-          <option value="../../bin/logs/run_test.41000006.1.0.sum">ia/ia blocking</option>
-          <option value="../../bin/logs/run_test.41000006.1.1.sum">ia/ia debug</option>
-          <option value="../../bin/logs/run_test.11001001.1.0.sum">lt/interconnect/lt blocking</option>
-          <option value="../../bin/logs/run_test.11001001.1.1.sum">lt/interconnect/lt debug</option>
-         </select>
+          </select>
         <select id="scale-option">
+          <option value="text">text</option>
           <option value="linear">linear</option>
           <option value="log">logarithmic</option>
         </select>
         <select id="chart-option">
           <option value="line">line chart</option>
           <option value="bar">bar chart</option>
+          <option value="pie">pie chart</option>
         </select>
        </div>
      </p>
-<div id="chartCanvas" style="width:800px; height:500px;"></div>
-<div id="spaveCanvas" style="width:1000px; height:80px;"></div>
+<div id="chartCanvas" style="width:1000px; height:1000px;"></div>
 <script>
 
 /* JAVASCRIPT CODE GOES HERE */
-var charttype;
-var scaletype;
+//var charttype;
+//var scaletype;
 
-function readCSV(myfile) {
+function readCSV(myfile, charttype, scaletype) {
       // read actual CSV file; make sure no spaces!
       d3.text(myfile, 'text/csv', function(data) {
       console.log(myfile);  //log raw data
@@ -101,7 +91,7 @@ function readCSV(myfile) {
       for (index = 0; index < my_data.length; index++) {
         xAxis.push(my_data[index][key_data[0]]);
       };
-      console.log(xAxis);
+      //console.log(xAxis);
 
       var yAxis = [];
       var yAxis_tmp = [];
@@ -112,40 +102,80 @@ function readCSV(myfile) {
         };
         yAxis.push(yAxis_tmp);
       };
-      console.log(yAxis);
+      //console.log(yAxis);
 
       var trace = [];
-      for (index1 = 1; index1 < key_data.length; index1++) {
-        if (charttype=="line") {
+      var limit = 10;
+      if (charttype=="pie") {
+        var shortX = [];
+        for (index = 0; index < limit; index++) {
+          shortX.push(xAxis[index]);
+        };
+        for (index1 = 1; index1 < key_data.length; index1++) {
+          var shortY = [];
+          for (index = 0; index < limit; index++) {
+            shortY.push(yAxis[index1-1][index]);
+          };
           var trace_tmp = {
+            //x: xAxis,
+            values: shortY,
+            labels: shortX,
+            name: key_data[index1],
+            type: 'pie',
+            domain: {
+              x: [0, 1],
+              y: [((index1-1)/(key_data.length-1))+0.01, (index1/(key_data.length-1))-0.01]
+            },
+            hoverinfo: 'label+percent+name',
+            textinfo: 'all'
+          };
+          trace.push(trace_tmp);
+        };
+      }
+      else {
+        for (index1 = 1; index1 < key_data.length; index1++) {
+          if (charttype=="line") {
+            var trace_tmp = {
             x: xAxis,
             y: yAxis[index1-1],
             name: key_data[index1],
             mode: 'lines+markers',
             line: {shape: 'spline'},
             type: 'scatter'
+            };
           };
-        }
-        else {
-          var trace_tmp = {
+          if (charttype=="bar") {
+            var trace_tmp = {
             x: xAxis,
             y: yAxis[index1-1],
             name: key_data[index1],
             type: 'bar'
+            };
           };
+          trace.push(trace_tmp);
         };
-        trace.push(trace_tmp);
       };
 
-      var layout = {
+      if (charttype=="pie") {
+        var layout = {
+          height : 900,
+          width  : 900
+        };
+      } 
+      else {
+        var layout = {
         title: Title,
         xaxis: {
           title: xTitle,
+          titlefont: {
+            size: 16,
+            color: 'rgb(107, 107, 107)'
+          },
           tickfont: {
             size: 14,
             color: 'rgb(107, 107, 107)'
           },
-          // type: scaletype
+           // type: scaletype
         },
         yaxis: {
           title: yTitle,
@@ -159,6 +189,7 @@ function readCSV(myfile) {
           }
         },
         barmode: 'stack'
+        };
       };
       console.log(trace);
       Plotly.newPlot('chartCanvas', trace, layout);
@@ -168,15 +199,17 @@ function readCSV(myfile) {
 //add an event listener
 d3.select("select")
     .on("change", function(d){
+      var charttype;
+      var scaletype;
       var sel       = d3.select('#label-option').node().value + ".csv";
-      var TableFile = d3.select('#label-option').node().value + ".html";
+      //var TableFile = d3.select('#label-option').node().value + ".html";
       scaletype     = d3.select('#scale-option').node().value;
       charttype     = d3.select('#chart-option').node().value;
       console.log(sel);
-      console.log(TableFile);
+      //console.log(TableFile);
       console.log(scaletype);
       console.log(charttype);
-      readCSV(sel);
+      readCSV(sel, charttype, scaletype);
     } );
 
 </script>
